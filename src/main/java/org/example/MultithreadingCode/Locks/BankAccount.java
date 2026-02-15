@@ -9,32 +9,32 @@ public class BankAccount {
 
        private Lock lock= new ReentrantLock();
     public void withdraw(int amount) {
+        boolean isLocked = false;
         try {
-            if( lock.tryLock(3500, TimeUnit.MILLISECONDS)) {
-                System.out.println(Thread.currentThread().getName() + " is trying to withdraw... " + amount);
-                try {
-                    if (balance >= amount) {
-                        try {
-                            Thread.sleep(3000);
-                        } catch (InterruptedException e) {
-                            throw new RuntimeException(e);
-                        }
-                        balance -= amount;
-                        System.out.println(Thread.currentThread().getName() + " withdraw successfuly" + " current Balance: " + balance);
-                    }else{
-                        System.out.println("Insuffisient Balance");
-                    }
-                } catch (Exception e) {
-                     e.printStackTrace();
-                } finally {
-                    lock.unlock();
-                }
-            }else {
-                System.out.println(Thread.currentThread().getName()+" is unable to get Lock will try later");
+            isLocked = lock.tryLock(3500, TimeUnit.MILLISECONDS);
+            if (!isLocked) {
+                System.out.println(Thread.currentThread().getName() + " could not acquire lock.");
+                return;
             }
+
+            System.out.println(Thread.currentThread().getName() + " trying to withdraw: " + amount);
+
+            if (balance >= amount) {
+                Thread.sleep(3000);
+                balance -= amount;
+                System.out.println("Withdrawal successful. Remaining balance: " + balance);
+            } else {
+                System.out.println("Insufficient balance.");
+            }
+
         } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            Thread.currentThread().interrupt();
+        } finally {
+            if (isLocked) {
+                lock.unlock();
+            }
         }
     }
+
 
 }
